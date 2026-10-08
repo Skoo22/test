@@ -209,6 +209,7 @@ function dumpDetails(text,refs){
 function organizeDumpInfo(text){
   const actions=[],segments=dumpSegments(text);
   const issueWords=/(?:\bbroken\b|\bdoes(?:n't| not) work\b|\bnot working\b|\bmalfunction\w*\b|\bleak\w*\b|\bdamag\w*\b|\bblock\w*\b|\bclogg\w*\b|\brepair\w*\b|\bissue\b|\bproblem\b|\bac\b|\bair[ -]?condition\w*\b|\bhot water\b|\btoilet\b|\bshower\b|\bwifi\b|\binternet\b|χαλασ|δεν δουλεύ|δε δουλεύ|δεν λειτουργ|διαρρο|σπασ|βλάβ|πρόβλη|προβλη|κλιματισ|επισκευ|δεν ανοίγ|δεν κλείν)/iu;
+  const soilingWords=/\bxest(?:i|h)?ke\b/iu;
   const holdWords=/(?:\bdo not enter\b|\bdon['’]?t enter\b|\bno entry\b|\bdnd\b|\bdo not disturb\b|μην\s+(?:το\s+)?(?:δώσετε|δώσεις|δώσουμε|μπει|μπείτε|καθαρίσει|καθαρίσετε)|μην\s+μπειτε)/iu;
   const taskWords=/(?:\b(?:bring|take|deliver|replace|restock|buy|pick up|order|prepare|call|tell|ask|send|check|remind|leave|put|add)\b|φέρε|φέρτε|βάλε|βάλτε|ανέβασε|αγόρασε|πάρε|παραγγείλε|έλεγξε|τσεκάρισε|ενημέρωσε|άφησε|δώσε|τηλεφώνησε|στείλε|ετοίμασε)/iu;
   for(const segment of segments){
@@ -216,14 +217,14 @@ function organizeDumpInfo(text){
     const cleaned=/\b(?:cleaned|is clean|now clean|finished cleaning|cleaning is done|cleaning started|ready for inspection|needs inspection|to inspect)\b|(?:καθαρίστ|έτοιμο για έλεγχο|για επιθεώρηση)/iu.test(segment);
     const cleaning=/\b(?:cleaning now|started cleaning|start cleaning|cleaning in progress|is cleaning)\b|(?:ξεκίνησε καθαρισ|καθαρίζεται τώρα|καθαρίζουν τώρα)/iu.test(segment);
     const needsClean=/\b(?:needs? (?:to be )?clean(?:ed|ing)?|dirty|checkout|check out|check-out|departure|departing|checked out|vacated)\b|(?:θέλει καθαρισ|χρειάζεται καθαρισ|για καθάρισμα|αναχώρηση|έφυγε|βρώμικ)/iu.test(segment);
-    const issue=issueWords.test(segment)||holdWords.test(segment),status=ready?'ready':needsClean?'todo':cleaned?'insp':cleaning?'clean':'';
+    const soiling=soilingWords.test(segment),issue=issueWords.test(segment)||holdWords.test(segment)||soiling,status=ready?'ready':needsClean?'todo':cleaned?'insp':cleaning?'clean':'';
     const refs=dumpRoomRefs(segment,!!(status||issue||taskWords.test(segment)));
     const configured=new Set(rooms().map(r=>r.n)),departure=/\b(?:checkout|check out|check-out|departure|departing|checked out|vacated)\b|(?:αναχώρηση|έφυγε)/iu.test(segment),stayover=/\b(?:stayover|stay over|occupied|in-house)\b|(?:παραμονή|διαμένει)/iu.test(segment);
     if(status&&refs.length)refs.forEach(room=>{if(configured.has(room)){const roomType=departure?'D':stayover?'S':S.today[room]?.t||'S';actions.push({kind:'room',room,status,roomType})}else if(!issue)actions.push({kind:'issue',room,text:segment,pr:'Normal'})});
     if(issue){
       const details=dumpDetails(segment,refs);
-      const hold=holdWords.test(segment),problem=details||segment;
-      (refs.length?refs:['']).forEach(room=>actions.push({kind:'issue',room,text:hold?`Hold: ${problem}`:problem,pr:/\b(?:urgent|asap|immediately|emergency)\b|(?:επείγον|άμεσα|αμέσως)/iu.test(segment)||hold?'Urgent':'Normal'}));
+      const hold=holdWords.test(segment),problem=soiling?'Soiling / sanitation clean-up required':details||segment;
+      (refs.length?refs:['']).forEach(room=>actions.push({kind:'issue',room,text:hold?`Hold: ${problem}`:problem,pr:/\b(?:urgent|asap|immediately|emergency)\b|(?:επείγον|άμεσα|αμέσως)/iu.test(segment)||hold||soiling?'Urgent':'Normal'}));
     }
     if(status&&!refs.length&&!issue)actions.push({kind:'task',text:segment,time:dumpTime(segment)});
     if(!status&&!issue){
