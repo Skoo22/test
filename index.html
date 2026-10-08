@@ -147,7 +147,7 @@ body.setup-open{overflow:hidden}
 </style>
 </head><body>
 <div class="app" id="appShell">
-<header class="top"><div><div class="title" id="title">Home</div><div class="date" id="date"></div></div><div><button class="icon" onclick="quick()">＋</button><button class="icon" onclick="setup()">⚙</button></div></header>
+<header class="top"><div><div class="title" id="title">Home</div><div class="date" id="date"></div></div><div><button class="icon" onclick="quick()">＋</button><button class="icon theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()" aria-label="Switch to dark mode" title="Switch to dark mode">☾</button><button class="icon" onclick="setup()">⚙</button></div></header>
 <section id="home" class="page on"></section>
 <section id="rooms" class="page"></section>
 <section id="plan" class="page"></section>
@@ -159,10 +159,14 @@ body.setup-open{overflow:hidden}
 <nav class="nav"><button data-p="home" class="on" onclick="go('home')"><b>⌂</b>Home</button><button data-p="rooms" onclick="go('rooms')"><b>▦</b>Rooms</button><button data-p="plan" onclick="go('plan')"><b>◷</b>Plan</button><button data-p="tasks" onclick="go('tasks')"><b>✓</b>Tasks</button><button data-p="stats" onclick="go('stats')"><b>⌁</b>Stats</button></nav>
 <div class="ov" id="ov"><div class="sheet" id="sheet"></div></div><div class="toast" id="toast"></div><div class="brief" id="brief"></div><div id="setupFlow" class="setup-flow" aria-hidden="true"></div>
 <script>
-const KEY='stay365_pwa_v5_2',ALT_KEY='housekeeping_planner_v6_3',FL=[['G','Ground'],['1','1st floor'],['2','2nd floor']],CHK=['Bed made, linen fresh','Bathroom clean, towels set','Floors vacuumed / washed','Surfaces dusted, no marks','Trash out, amenities restocked','Nothing broken or left behind'],ST={todo:'To do',clean:'Cleaning',insp:'To inspect',fix:'Fix needed',ready:'Ready'};
+const KEY='stay365_pwa_v5_2',ALT_KEY='housekeeping_planner_v6_3',THEME_KEY='housekeeping_theme_v1',FL=[['G','Ground'],['1','1st floor'],['2','2nd floor']],CHK=['Bed made, linen fresh','Bathroom clean, towels set','Floors vacuumed / washed','Surfaces dusted, no marks','Trash out, amenities restocked','Nothing broken or left behind'],ST={todo:'To do',clean:'Cleaning',insp:'To inspect',fix:'Fix needed',ready:'Ready'};
 const blank=()=>({userName:'',propertyName:'',hk:['Housekeeper 1','Housekeeper 2'],floors:{G:[],1:[],2:[]},day:'',brief:'',planReady:false,plan:{},today:{},hist:[],issues:[],tasks:[],reminders:[]});
 let S,cur='home',flt='all',pf='tomorrow';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function getThemePreference(){try{return localStorage.getItem(THEME_KEY)||'auto'}catch(e){return'auto'}}
+function applyTheme(preference=getThemePreference()){const value=preference==='light'||preference==='dark'?preference:'auto',root=document.documentElement;if(value==='auto')root.removeAttribute('data-theme');else root.dataset.theme=value;const dark=value==='dark'||(value==='auto'&&!!window.matchMedia?.('(prefers-color-scheme: dark)').matches),button=$('themeToggle'),meta=document.querySelector('meta[name="theme-color"]');if(button){button.textContent=dark?'☀':'☾';button.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');button.title=dark?'Switch to light mode':'Switch to dark mode'}if(meta)meta.content=dark?'#12171d':'#f5f6f8'}
+function toggleTheme(){const root=document.documentElement,dark=root.dataset.theme==='dark'||(!root.dataset.theme&&!!window.matchMedia?.('(prefers-color-scheme: dark)').matches),next=dark?'light':'dark';try{localStorage.setItem(THEME_KEY,next)}catch(e){}applyTheme(next)}
+const themeMedia=window.matchMedia?.('(prefers-color-scheme: dark)');if(themeMedia?.addEventListener)themeMedia.addEventListener('change',()=>{if(getThemePreference()==='auto')applyTheme('auto')});else themeMedia?.addListener?.(()=>{if(getThemePreference()==='auto')applyTheme('auto')});applyTheme();
 const isRecord=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const textValue=v=>typeof v==='string'?v:'';
 function normalizeState(value){
