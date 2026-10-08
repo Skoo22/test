@@ -1,0 +1,11 @@
+Housekeeping Planner V6.4 update
+
+Upload/replace these files in the existing GitHub repository:
+- index.html
+- sw.js
+- manifest.webmanifest
+
+Do NOT delete the repository or clear browser/site data.
+The app preserves the V6.2 localStorage key and also reads/writes the V6.3 key, so existing local data survives the update.
+
+No icon replacement is required.
