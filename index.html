@@ -33,12 +33,13 @@
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:15px}.stat b{font-size:25px}.stat p{margin:4px 0 0;font-size:11px;color:var(--mu)}
 .toast{position:fixed;left:50%;bottom:93px;transform:translateX(-50%);background:#17202a;color:#fff;border-radius:12px;padding:10px 14px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:100}.toast.on{opacity:1}
 .brief{display:none;position:fixed;inset:0;background:var(--bg);z-index:80;overflow:auto;padding:calc(20px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}.brief.on{display:block}.bbox{max-width:560px;margin:auto}.bbox h1{font-size:28px;margin:0 0 4px}.big{font-size:34px;font-weight:850;margin:14px 0 2px}
+.brief-top{display:flex;justify-content:flex-end;margin:-4px 0 8px}.task-actions{display:flex;gap:5px}.task-actions .mini{padding:7px 9px}
 @media(max-width:560px){.grid{grid-template-columns:1fr 1fr}}
 </style>
 <style id="v6-polish">
   :root { -webkit-tap-highlight-color: transparent; }
-  html { background:#f7f7f8; }
-  body { overscroll-behavior-y:none; }
+  html { min-height:100%; background:var(--bg); }
+  body { min-height:100vh; min-height:100dvh; overscroll-behavior-y:none; }
   button, a, input, select, textarea { touch-action:manipulation; }
   button { min-height:42px; }
   .card, .room-card, .summary-card, .stat-card { transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease; }
@@ -68,7 +69,38 @@ const KEY='stay365_pwa_v5_2',ALT_KEY='housekeeping_planner_v6_3',FL=[['G','Groun
 const blank=()=>({userName:'',propertyName:'',hk:['Housekeeper 1','Housekeeper 2'],floors:{G:[],1:[],2:[]},day:'',brief:'',planReady:false,plan:{},today:{},hist:[],issues:[],tasks:[],reminders:[]});
 let S,cur='home',flt='all',pf='tomorrow';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function load(){try{let raw=localStorage.getItem(ALT_KEY)||localStorage.getItem(KEY)||'{}',o=JSON.parse(raw);return Object.assign(blank(),o,{planReady:!!o.planReady})}catch(e){return blank()}}
+const isRecord=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
+const textValue=v=>typeof v==='string'?v:'';
+function normalizeState(value){
+  const o=isRecord(value)?value:{},base=blank(),sourceFloors=isRecord(o.floors)?o.floors:{};
+  const floors=Object.fromEntries(FL.map(([f])=>[f,[...new Set((Array.isArray(sourceFloors[f])?sourceFloors[f]:[]).filter(v=>typeof v==='string').map(v=>v.trim()).filter(Boolean))]]));
+  const validRooms=new Set(Object.values(floors).flat());
+  const roomMap=(value,withStatus)=>Object.fromEntries(Object.entries(isRecord(value)?value:{}).filter(([name,r])=>validRooms.has(name)&&isRecord(r)&&(r.t==='D'||r.t==='S')).map(([name,r])=>{
+    const item={...r,t:r.t,p:!!r.p,note:textValue(r.note)};
+    if(withStatus){item.st=Object.prototype.hasOwnProperty.call(ST,r.st)?r.st:'todo';item.f=Number.isFinite(+r.f)?Math.max(0,Math.floor(+r.f)):0;item.fx=textValue(r.fx);for(const key of ['s','started','finished','inspected','ready','reinspect','m'])if(key in r)item[key]=Number.isFinite(+r[key])?+r[key]:0;if(item.st==='clean'&&!item.s)item.s=Date.now();item.h=!!r.h}
+    return [name,item];
+  }));
+  const records=value=>Array.isArray(value)?value.filter(isRecord):[];
+  const hk=Array.isArray(o.hk)?[0,1].map(i=>textValue(o.hk[i]).trim()||base.hk[i]):base.hk;
+  return Object.assign(base,o,{
+    userName:textValue(o.userName),propertyName:textValue(o.propertyName),hk,floors,
+    day:textValue(o.day),brief:textValue(o.brief),planReady:!!o.planReady,
+    plan:roomMap(o.plan,false),today:roomMap(o.today,true),
+    hist:records(o.hist).map(x=>({...x,room:textValue(x.room),t:x.t==='D'?'D':'S',m:Number.isFinite(+x.m)?+x.m:0,f:Number.isFinite(+x.f)?+x.f:0,turn:Number.isFinite(+x.turn)?+x.turn:0})),
+    issues:records(o.issues).map(x=>({...x,room:textValue(x.room),text:textValue(x.text),pr:['Normal','Urgent','Low'].includes(x.pr)?x.pr:'Normal',open:x.open!==false,when:textValue(x.when)})),
+    tasks:records(o.tasks).map(x=>({...x,text:textValue(x.text??x.title),time:textValue(x.time)||'No time',done:!!x.done})),
+    reminders:records(o.reminders).map(x=>({...x,text:textValue(x.text??x.title),time:textValue(x.time),done:!!x.done}))
+  });
+}
+function load(){
+  let saved=[];
+  try{saved=[localStorage.getItem(ALT_KEY),localStorage.getItem(KEY)].filter(Boolean)}catch(e){return blank()}
+  const loaded=[];
+  for(const raw of saved){try{const parsed=JSON.parse(raw);if(isRecord(parsed))loaded.push(normalizeState(parsed))}catch(e){}}
+  const hasContent=s=>!!(s.userName||s.propertyName||Object.values(s.floors).some(a=>a.length)||Object.keys(s.today).length||Object.keys(s.plan).length||s.hist.length||s.issues.length||s.tasks.length||s.reminders.length);
+  return loaded.find(hasContent)||loaded[0]||blank();
+}
+function hasStoredState(){try{return !!(localStorage.getItem(KEY)||localStorage.getItem(ALT_KEY))}catch(e){return false}}
 const save=()=>{try{const raw=JSON.stringify(S);localStorage.setItem(KEY,raw);localStorage.setItem(ALT_KEY,raw)}catch(e){}};
 function toast(m){let t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600)}
 function roll(){let d=new Date().toDateString();if(S.day!==d){S.today={};for(const r in S.plan)S.today[r]=Object.assign({},S.plan[r],{st:'todo',f:0});S.plan={};S.planReady=false;S.tasks=S.tasks.filter(t=>!t.done);S.reminders=S.reminders.filter(r=>!r.done);S.day=d;save()}}
@@ -77,8 +109,9 @@ const floorOf=n=>(rooms().find(r=>r.n===n)||{}).f;
 const owner=f=>f==='1'?S.hk[0]:f==='2'?S.hk[1]:'Shared';
 const list=()=>Object.keys(S.today).map(n=>Object.assign({n,f:floorOf(n)},S.today[n])).sort((a,b)=>rooms().findIndex(r=>r.n===a.n)-rooms().findIndex(r=>r.n===b.n));
 const tl=t=>t==='D'?'Departure':'Stayover',el=r=>Math.max(1,Math.floor((Date.now()-r.s)/60000)),pill=r=>`<span class="pill ${r.st}">${ST[r.st]}</span>`;
-function go(p){cur=p;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id===p));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.p===p));$('title').textContent={home:'Home',rooms:'Rooms',plan:'Plan',tasks:'Tasks',issues:'Issues',stats:'Stats',reminders:'Reminders'}[p];render();scrollTo(0,0)}
-function rrow(r){let m=r.st==='clean'?el(r)+' min so far':r.st==='fix'?esc(r.fx):owner(r.f);return `<div class="row" onclick="openRoom('${r.n}')"><div class="no">${esc(r.n)}</div><div><strong>${tl(r.t)}${r.p?' · Priority':''}</strong><div class="meta">${m}</div></div>${pill(r)}</div>`}
+function go(p){if($('brief').classList.contains('on')){$('brief').classList.remove('on');S.brief=S.day;save()}cur=p;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id===p));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.p===p));$('title').textContent={home:'Home',rooms:'Rooms',plan:'Plan',tasks:'Tasks',issues:'Issues',stats:'Stats',reminders:'Reminders'}[p];render();scrollTo(0,0)}
+function jsArg(v){return esc(JSON.stringify(String(v)))}
+function rrow(r){let m=r.st==='clean'?el(r)+' min so far':r.st==='fix'?esc(r.fx):owner(r.f);return `<div class="row" onclick="openRoom(${jsArg(r.n)})"><div class="no">${esc(r.n)}</div><div><strong>${tl(r.t)}${r.p?' · Priority':''}</strong><div class="meta">${m}</div></div>${pill(r)}</div>`}
 function render(){$('date').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'});
 let L=list(),rd=L.filter(r=>r.st==='ready').length,oi=S.issues.filter(i=>i.open),ot=S.tasks.filter(t=>!t.done),or=S.reminders.filter(r=>!r.done).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
 // home
@@ -100,9 +133,9 @@ let H2=S.hist.slice(-120),avgFor=t=>{let a=H2.filter(x=>x.t===t&&x.m);return a.l
 $('plan').innerHTML=`<div class="seg"><button class="${pf==='tomorrow'?'on':''}" onclick="pf='tomorrow';render()">Tomorrow</button><button class="${pf==='today'?'on':''}" onclick="pf='today';render()">Today</button></div>
 <div class="hero"><h2>${pf==='tomorrow'?'Prepare tomorrow':"Today's plan"}</h2><p>${pf==='tomorrow'?'Set the workload tonight. The morning briefing will use this plan.':'Changes here apply to today right away.'}</p><div class="grid" style="margin-top:12px"><div class="metric"><span>🧹 Rooms</span><b>${planned.length}</b><small class="meta">${dep.length} departures · ${stay.length} stayovers</small></div><div class="metric"><span>★ Priority</span><b>${pri.length}</b><small class="meta">rooms</small></div><div class="metric"><span>📝 Notes</span><b>${notes.length}</b><small class="meta">special instructions</small></div><div class="metric"><span>⏱️ Est.</span><b>${est?est+'m':'—'}</b><small class="meta">from your history</small></div></div>${pf==='tomorrow'?`<button class="btn ${S.planReady?'g':'f'}" onclick="togglePlanReady()">${S.planReady?'✓ Tomorrow is ready':'✓ Mark tomorrow ready'}</button>${S.planReady?'<div class="meta" style="margin-top:8px">Plan ready — you can still edit it anytime.</div>':''}`:''}</div>
 ${rooms().length?FL.map(([f,l])=>S.floors[f].length?`<div class="sec" style="margin-top:14px"><h3>${l} · ${owner(f)}</h3><div class="list">${S.floors[f].map(n=>planRow(n,P)).join('')}</div></div>`:'').join(''):'<div class="hero"><h2>Add your rooms first</h2><button class="btn f" onclick="setup()">Open setup</button></div>'}`;
-function planRow(n,P){let p=P[n]||{},note=p.note&&p.note.trim();let state=p.t?esc(p.t==='D'?'Departure':'Stayover'):'Not planned';return `<div class="row" style="grid-template-columns:48px 1fr auto"><div class="no">${esc(n)}</div><div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="mini ${p.t==='D'?'on':''}" onclick="setPlan('${n}','D')">Departure</button><button class="mini ${p.t==='S'?'on':''}" onclick="setPlan('${n}','S')">Stayover</button>${p.t?`<button class="mini ${p.p?'on':''}" onclick="setPri('${n}')">★ Priority</button>`:''}</div><div class="meta" style="margin-top:7px">${note?'📝 '+esc(note):state+(p.t?' · Add a special note if needed':'')}</div></div>${p.t?`<button class="mini" onclick="editPlanNote('${n}')">${note?'Edit':'Note'}</button>`:''}</div>`}
+function planRow(n,P){let p=P[n]||{},note=p.note&&p.note.trim();let state=p.t?esc(p.t==='D'?'Departure':'Stayover'):'Not planned';return `<div class="row" style="grid-template-columns:48px 1fr auto"><div class="no">${esc(n)}</div><div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="mini ${p.t==='D'?'on':''}" onclick="setPlan(${jsArg(n)},'D')">Departure</button><button class="mini ${p.t==='S'?'on':''}" onclick="setPlan(${jsArg(n)},'S')">Stayover</button>${p.t?`<button class="mini ${p.p?'on':''}" onclick="setPri(${jsArg(n)})">★ Priority</button>`:''}</div><div class="meta" style="margin-top:7px">${note?'📝 '+esc(note):state+(p.t?' · Add a special note if needed':'')}</div></div>${p.t?`<button class="mini" onclick="editPlanNote(${jsArg(n)})">${note?'Edit':'Note'}</button>`:''}</div>`}
 // tasks
-$('tasks').innerHTML=`<div class="hero"><h2>Tasks</h2><p>Done tasks clear themselves the next morning.</p><button class="btn f" onclick="addTask()">＋ Add task</button></div><div class="list">${S.tasks.map((t,k)=>`<div class="row" onclick="S.tasks[${k}].done=!S.tasks[${k}].done;save();render()"><div class="no">${t.done?'✅':'⬜'}</div><div><strong style="${t.done?'text-decoration:line-through;color:#8b929b':''}">${esc(t.text)}</strong><div class="meta">${esc(t.time)}</div></div></div>`).join('')||'<div class="row"><div></div><div class="meta">No tasks.</div></div>'}</div>`;
+$('tasks').innerHTML=`<div class="hero"><h2>Tasks</h2><p>Done tasks clear themselves the next morning.</p><button class="btn f" onclick="addTask()">＋ Add task</button></div><div class="list">${S.tasks.map((t,k)=>`<div class="row" style="grid-template-columns:36px minmax(0,1fr) auto" onclick="toggleTask(${k})"><div class="no">${t.done?'✅':'⬜'}</div><div><strong style="${t.done?'text-decoration:line-through;color:#8b929b':''}">${esc(t.text)}</strong><div class="meta">${esc(t.time)}</div></div><div class="task-actions"><button class="mini" aria-label="Edit task" onclick="event.stopPropagation();editTask(${k})">Edit</button><button class="mini" aria-label="Delete task" onclick="event.stopPropagation();deleteTask(${k})">Delete</button></div></div>`).join('')||'<div class="row"><div></div><div class="meta">No tasks.</div></div>'}</div>`;
 // issues
 $('issues').innerHTML=`<div class="hero"><h2>Issues</h2><button class="btn f" onclick="addIssue()">＋ Report issue</button></div><div class="list">${S.issues.map((i,k)=>`<div class="row"><div class="no">${esc(i.room||'—')}</div><div><strong>${esc(i.text)}</strong><div class="meta">${i.pr} · ${esc(i.when)}</div></div>${i.open?`<button class="mini on" onclick="S.issues[${k}].open=false;S.issues[${k}].fixedAt=Date.now();save();render()">Fixed</button>`:'<span class="pill ready">Fixed</span>'}</div>`).join('')||'<div class="row"><div></div><div class="meta">No issues.</div></div>'}</div>`;
 // reminders
@@ -120,17 +153,17 @@ $('ov').onclick=e=>{if(e.target.id==='ov')closeSheet()};
 const head=t=>`<div class="sh"><h2>${t}</h2><button class="x" type="button" onclick="closeSheet()">×</button></div>`;
 function setPlan(n,t){let P=pf==='today'?S.today:S.plan;if(P[n]&&P[n].t===t)delete P[n];else P[n]=Object.assign(P[n]||{p:false,note:''},{t},pf==='today'&&!(P[n]&&P[n].st)?{st:'todo',f:0}:{});if(pf==='tomorrow')S.planReady=false;save();render()}
 function setPri(n){let P=pf==='today'?S.today:S.plan;if(!P[n]||!P[n].t)return;P[n].p=!P[n].p;if(pf==='tomorrow')S.planReady=false;save();render()}
-function editPlanNote(n){let P=pf==='today'?S.today:S.plan;if(!P[n]||!P[n].t)return;sheet(`${head('Room '+esc(n)+' note')}<div class="fld"><label>Special cleaning / operational note</label><textarea id="a1" maxlength="180" placeholder="e.g. Extra towels, baby cot, check shower drain...">${esc(P[n].note||'')}</textarea></div><button class="btn f" onclick="savePlanNote('${n}')">Save note</button>${P[n].note?`<button class="btn s f" onclick="clearPlanNote('${n}')">Remove note</button>`:''}`)}
+function editPlanNote(n){let P=pf==='today'?S.today:S.plan;if(!P[n]||!P[n].t)return;sheet(`${head('Room '+esc(n)+' note')}<div class="fld"><label>Special cleaning / operational note</label><textarea id="a1" maxlength="180" placeholder="e.g. Extra towels, baby cot, check shower drain...">${esc(P[n].note||'')}</textarea></div><button class="btn f" onclick="savePlanNote(${jsArg(n)})">Save note</button>${P[n].note?`<button class="btn s f" onclick="clearPlanNote(${jsArg(n)})">Remove note</button>`:''}`)}
 function savePlanNote(n){let P=pf==='today'?S.today:S.plan;if(P[n])P[n].note=$('a1').value.trim();if(pf==='tomorrow')S.planReady=false;save();closeSheet();render();toast('Room note saved')}
 function clearPlanNote(n){let P=pf==='today'?S.today:S.plan;if(P[n])P[n].note='';if(pf==='tomorrow')S.planReady=false;save();closeSheet();render();toast('Note removed')}
 function togglePlanReady(){if(!Object.values(S.plan).some(r=>r.t)){toast('Plan at least one room first');return}S.planReady=!S.planReady;save();render();toast(S.planReady?'Tomorrow is ready ✓':'Tomorrow marked as editable')}
 function openRoom(n){let r=S.today[n],a='';
-if(r.st==='todo')a=`<button class="btn f" onclick="act('${n}','start')">Start cleaning</button>`;
-else if(r.st==='clean')a=`<button class="btn f" onclick="act('${n}','finish')">Finish cleaning</button>`;
-else if(r.st==='insp')a=`<div class="panel" style="margin-top:12px"><h3 style="margin:0 0 4px;font-size:15px">Inspection</h3>${CHK.map((c,i)=>`<label class="chk"><input type="checkbox" class="ck" data-i="${i}"> ${c}</label>`).join('')}</div><button class="btn g f" onclick="inspect('${n}',true)">Pass → Ready</button><button class="btn r f" onclick="inspect('${n}',false)">Fail → send back</button>`;
-else if(r.st==='fix')a=`<div class="panel" style="margin-top:12px"><strong>To fix</strong><div class="meta">${esc(r.fx)}</div></div><button class="btn f" onclick="act('${n}','reinsp')">Fixed → inspect again</button>`;
-else a=`<button class="btn s f" onclick="act('${n}','redo')">Re-clean room</button>`;
-sheet(`${head('Room '+esc(n))}<div class="meta">${tl(r.t)} · ${owner(floorOf(n))}${r.f?' · failed '+r.f+'×':''} ${pill(r)}</div>${a}<button class="btn s f" onclick="closeSheet();addIssue('${n}')">Report issue for this room</button>`)}
+if(r.st==='todo')a=`<button class="btn f" onclick="act(${jsArg(n)},'start')">Start cleaning</button>`;
+else if(r.st==='clean')a=`<button class="btn f" onclick="act(${jsArg(n)},'finish')">Finish cleaning</button>`;
+else if(r.st==='insp')a=`<div class="panel" style="margin-top:12px"><h3 style="margin:0 0 4px;font-size:15px">Inspection</h3>${CHK.map((c,i)=>`<label class="chk"><input type="checkbox" class="ck" data-i="${i}"> ${c}</label>`).join('')}</div><button class="btn g f" onclick="inspect(${jsArg(n)},true)">Pass → Ready</button><button class="btn r f" onclick="inspect(${jsArg(n)},false)">Fail → send back</button>`;
+else if(r.st==='fix')a=`<div class="panel" style="margin-top:12px"><strong>To fix</strong><div class="meta">${esc(r.fx)}</div></div><button class="btn f" onclick="act(${jsArg(n)},'reinsp')">Fixed → inspect again</button>`;
+else a=`<button class="btn s f" onclick="act(${jsArg(n)},'redo')">Re-clean room</button>`;
+sheet(`${head('Room '+esc(n))}<div class="meta">${tl(r.t)} · ${owner(floorOf(n))}${r.f?' · failed '+r.f+'×':''} ${pill(r)}</div>${a}<button class="btn s f" onclick="closeSheet();addIssue(${jsArg(n)})">Report issue for this room</button>`)}
 function act(n,w){let r=S.today[n];if(w==='start'||w==='redo'){r.st='clean';r.s=Date.now();r.started=r.started||r.s}
 else if(w==='finish'){r.finished=Date.now();r.m=Math.max(1,Math.floor((r.finished-r.s)/60000));r.st=r.t==='D'?'insp':'ready';if(r.st==='ready'){r.ready=r.finished;done(n)}}
 else if(w==='reinsp'){r.st='insp';r.reinspect=Date.now()}save();closeSheet();render();toast(w==='start'?'Cleaning started':'Saved')}
@@ -142,7 +175,12 @@ save();closeSheet();render();toast(pass?'Room '+n+' ready ✓':'Sent back')}
 function addIssue(room=''){sheet(`${head('Report issue')}<div class="fld"><label>Room / area</label><input id="a1" value="${esc(room)}"></div><div class="fld"><label>Problem</label><input id="a2"></div><div class="fld"><label>Priority</label><select id="a3"><option>Normal</option><option>Urgent</option><option>Low</option></select></div><button class="btn f" onclick="saveIssue()">Save issue</button>`)}
 function saveIssue(){let t=$('a2').value.trim();if(!t)return toast('Describe the problem');S.issues.unshift({room:$('a1').value.trim(),text:t,pr:$('a3').value,open:true,when:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});save();closeSheet();render();toast('Issue added')}
 function addTask(){sheet(`${head('Add task')}<div class="fld"><label>Task</label><input id="a1"></div><div class="fld"><label>Time (optional)</label><input id="a2" type="time"></div><button class="btn f" onclick="saveTask()">Add task</button>`)}
-function saveTask(){let t=$('a1').value.trim();if(!t)return toast('Write the task');S.tasks.push({text:t,time:$('a2').value||'No time',done:false});save();closeSheet();render()}
+function saveTask(){let t=$('a1').value.trim();if(!t)return toast('Write the task');S.tasks.push({text:t,time:$('a2').value||'No time',done:false});save();closeSheet();render();toast('Task added')}
+function toggleTask(i){if(!S.tasks[i])return;S.tasks[i].done=!S.tasks[i].done;save();render()}
+function editTask(i){const t=S.tasks[i];if(!t)return;const time=/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t.time||'')?t.time:'';sheet(`${head('Edit task')}<div class="fld"><label>Task</label><input id="a1" value="${esc(t.text)}"></div><div class="fld"><label>Time (optional)</label><input id="a2" type="time" value="${esc(time)}"></div><button class="btn f" onclick="saveTaskEdit(${i})">Save changes</button>`)}
+function saveTaskEdit(i){const t=S.tasks[i],value=$('a1')?.value.trim();if(!t)return closeSheet();if(!value)return toast('Write the task');t.text=value;t.time=$('a2')?.value||'No time';save();closeSheet();render();toast('Task updated')}
+function deleteTask(i){const t=S.tasks[i];if(!t)return;sheet(`${head('Delete task?')}<p>Remove “${esc(t.text)}” from the task list?</p><button class="btn r f" onclick="removeTask(${i})">Delete task</button><button class="btn s f" onclick="closeSheet()">Cancel</button>`)}
+function removeTask(i){if(!S.tasks[i])return closeSheet();S.tasks.splice(i,1);save();closeSheet();render();toast('Task deleted')}
 function addReminder(){sheet(`${head('Add reminder')}<div class="fld"><label>Reminder</label><input id="a1"></div><div class="fld"><label>Time</label><input id="a2" type="time"></div><button class="btn f" onclick="saveReminder()">Add reminder</button>`)}
 function saveReminder(){let t=$('a1').value.trim();if(!t)return toast('Write the reminder');S.reminders.push({text:t,time:$('a2').value||'No time',done:false});save();closeSheet();render();toast('Reminder added')}
 function quick(){sheet(`${head('Quick add')}<button class="btn s f" onclick="addTask()">✓ Task</button><button class="btn s f" onclick="addIssue()">⚠️ Issue</button><button class="btn s f" onclick="addReminder()">🔔 Reminder</button><button class="btn s f" onclick="closeSheet();go('plan')">🧹 Plan rooms</button>`)}
@@ -319,20 +357,20 @@ function saveOnboardingEnvironment(){
 }
 function setup(){sheet(`${head('Setup')}<div class="fld"><label>Property / hotel name</label><input id="prop" placeholder="e.g. My Hotel" value="${esc(S.propertyName||'')}"></div><div class="fld"><label>Housekeeper on 1st floor</label><input id="h0" value="${esc(S.hk[0])}"></div><div class="fld"><label>Housekeeper on 2nd floor</label><input id="h1" value="${esc(S.hk[1])}"></div>${FL.map(([f,l])=>`<div class="fld"><label>${l} rooms (separate with commas)</label><input id="fl${f}" value="${esc(S.floors[f].join(', '))}"></div>`).join('')}<button class="btn f" onclick="saveSetup()">Save setup</button>
 <div class="fld" style="margin-top:22px"><label>Backup — copy this text somewhere safe, or paste a backup here and restore</label><textarea id="bk">${esc(JSON.stringify(S))}</textarea></div><button class="btn s f" onclick="copyBackup()">Copy backup</button><button class="btn s f" onclick="restore()">Restore from pasted backup</button><button class="btn s f" onclick="if(confirm('Clear today\\'s list and statuses?')){S.today={};save();closeSheet();render()}">Clear today</button>`)}
-function saveSetup(){S.propertyName=$('prop').value.trim();S.hk=[$('h0').value.trim()||'Housekeeper 1',$('h1').value.trim()||'Housekeeper 2'];FL.forEach(([f])=>S.floors[f]=[...new Set($('fl'+f).value.split(/[,\s]+/).filter(Boolean))]);save();closeSheet();render();toast('Setup saved')}
+function saveSetup(){S.propertyName=$('prop').value.trim();S.hk=[$('h0').value.trim()||'Housekeeper 1',$('h1').value.trim()||'Housekeeper 2'];FL.forEach(([f])=>S.floors[f]=[...new Set($('fl'+f).value.split(',').map(v=>v.trim()).filter(Boolean))]);const valid=new Set(rooms().map(r=>r.n)),keep=map=>Object.fromEntries(Object.entries(isRecord(map)?map:{}).filter(([n])=>valid.has(n)));S.today=keep(S.today);S.plan=keep(S.plan);save();closeSheet();render();toast('Setup saved')}
 async function copyBackup(){let v=$('bk').value;try{await navigator.clipboard.writeText(v);toast('Backup copied')}catch(e){$('bk').focus();$('bk').select();try{document.execCommand('copy');toast('Backup copied')}catch(e2){toast('Select and copy the backup')}}}
-function restore(){try{let o=JSON.parse($('bk').value);if(!o.floors)throw 0;S=Object.assign(blank(),o);save();closeSheet();roll();render();toast('Backup restored')}catch(e){toast('That is not a valid backup')}}
+function restore(){try{let o=JSON.parse($('bk').value);if(!isRecord(o)||!isRecord(o.floors))throw 0;S=normalizeState(o);save();closeSheet();roll();render();toast('Backup restored')}catch(e){toast('That is not a valid backup')}}
 
 function showBrief(){let L=list(),D=L.filter(r=>r.t==='D').length,pr=L.filter(r=>r.p).map(r=>r.n),oi=S.issues.filter(i=>i.open),ot=S.tasks.filter(t=>!t.done),hr=new Date().getHours(),g=hr<12?'Good morning':hr<18?'Good afternoon':'Good evening';
 let fl=[['1',S.hk[0]+' · 1st floor'],['2',S.hk[1]+' · 2nd floor'],['G','Ground floor · shared']].map(([f,l])=>{let a=L.filter(r=>r.f===f);return a.length?`<div class="row" style="grid-template-columns:1fr auto"><strong>${esc(l)}</strong><span class="meta">${a.filter(r=>r.t==='D').length} dep · ${a.filter(r=>r.t==='S').length} stay</span></div>`:''}).join('');
-$('brief').innerHTML=`<div class="bbox"><h1>${g}${S.userName?', '+esc(S.userName):''} 👋</h1><div class="meta">${new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+$('brief').innerHTML=`<div class="bbox"><div class="brief-top"><button class="x" type="button" aria-label="Close daily briefing" onclick="closeBrief('home')">×</button></div><h1>${g}${S.userName?', '+esc(S.userName):''} 👋</h1><div class="meta">${new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
 ${L.length?`<div class="big">${L.length} rooms today</div><div class="meta">${D} departures · ${L.length-D} stayovers</div>${fl?`<div class="list" style="margin-top:14px">${fl}</div>`:''}
 ${pr.length?`<div class="sec"><h3>Priority rooms</h3><div class="panel"><strong>${pr.map(esc).join(', ')}</strong><div class="meta">Do these first.</div></div></div>`:''}${L.filter(r=>r.note).length?`<div class="sec"><h3>Special room notes</h3><div class="list">${L.filter(r=>r.note).map(r=>`<div class="row"><div class="no">${esc(r.n)}</div><div><strong>${esc(r.note)}</strong></div></div>`).join('')}</div></div>`:''}`:`<div class="hero" style="margin-top:14px"><h2>No rooms planned yet</h2><p>Mark today's departures and stayovers in Plan.</p></div>`}
 ${oi.length?`<div class="sec"><h3>Open issues</h3><div class="list">${oi.slice(0,4).map(i=>`<div class="row"><div class="no">${esc(i.room||'—')}</div><div><strong>${esc(i.text)}</strong><div class="meta">${i.pr}</div></div></div>`).join('')}</div></div>`:''}
 ${ot.length?`<div class="sec"><h3>Tasks</h3><div class="list">${ot.slice(0,4).map(t=>`<div class="row" style="grid-template-columns:1fr auto"><strong>${esc(t.text)}</strong><span class="meta">${esc(t.time)}</span></div>`).join('')}</div></div>`:''}
 <button class="btn f" onclick="closeBrief('${L.length?'rooms':'plan'}')">${L.length?'Start the day':'Plan rooms'}</button><button class="btn s f" onclick="openDailyExport()">Share daily briefing</button></div>`;$('brief').classList.add('on')}
 function closeBrief(p){$('brief').classList.remove('on');S.brief=S.day;save();go(p||cur)}
-const hasLocalData=!!localStorage.getItem(KEY);
+const hasLocalData=hasStoredState();
 S=load();S.reminders=S.reminders||[];S.tasks=S.tasks||[];S.issues=S.issues||[];roll();render();
 if(!hasLocalData || !S.userName || !S.propertyName){onboarding(!S.userName?1:2)}
 else if(!rooms().length)setup();
@@ -356,3 +394,4 @@ if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWor
 })();
 </script>
 </body></html>
+
