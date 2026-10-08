@@ -435,8 +435,6 @@ const hasLocalData=hasStoredState();
 S=load();S.reminders=S.reminders||[];S.tasks=S.tasks||[];S.issues=S.issues||[];roll();render();
 if(!hasLocalData || !S.userName || !S.propertyName){onboarding(!S.userName?1:2)}
 else if(!rooms().length)setup();
-else if(S.brief!==S.day)showBrief();
-else showDumpPrompt();
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 
@@ -485,6 +483,7 @@ const _sb=showBrief;showBrief=function(){_sb();try{const or=S.reminders.filter(r
 if(or.length&&b)b.insertAdjacentHTML('beforebegin',`<div class="sec"><h3>Reminders</h3><div class="list">${or.map(r=>`<div class="row" style="grid-template-columns:1fr auto"><strong>${esc(r.text)}</strong><span class="meta">${esc(r.time||'No time')}</span></div>`).join('')}</div></div>`)}catch(e){}};
 const _sp=setPlan;setPlan=function(n,t){const r=S.today[n];if(pf==='today'&&r&&r.t===t&&r.st&&r.st!=='todo'&&!confirm('Remove room '+n+' from today? Its progress will be lost.'))return;_sp(n,t)};
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;const d=S.day;roll();if(S.day!==d){render();if(S.userName&&S.propertyName&&rooms().length){closeSheet();showBrief()}}});
+if(S.userName&&S.propertyName&&rooms().length){if(S.brief!==S.day)showBrief();else showDumpPrompt()}
 })();
 </script>
 </body></html>
