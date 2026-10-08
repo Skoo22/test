@@ -34,6 +34,7 @@
 .toast{position:fixed;left:50%;bottom:93px;transform:translateX(-50%);background:#17202a;color:#fff;border-radius:12px;padding:10px 14px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:100}.toast.on{opacity:1}
 .brief{display:none;position:fixed;inset:0;background:var(--bg);z-index:80;overflow:auto;padding:calc(20px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}.brief.on{display:block}.bbox{max-width:560px;margin:auto}.bbox h1{font-size:28px;margin:0 0 4px}.big{font-size:34px;font-weight:850;margin:14px 0 2px}
 .brief-top{display:flex;justify-content:flex-end;margin:-4px 0 8px}.task-actions{display:flex;gap:5px}.task-actions .mini{padding:7px 9px}
+.dump-entry{min-height:126px;line-height:1.45}.dump-preview{margin-top:12px;padding:12px;background:var(--soft);border-radius:12px}.dump-group+.dump-group{margin-top:10px}.dump-group h3{font-size:12px;margin:0 0 5px}.dump-item{padding:7px 0;border-top:1px solid var(--ln)}.dump-item:first-of-type{border-top:0}.dump-apply:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:560px){.grid{grid-template-columns:1fr 1fr}}
 </style>
 <style id="v6-polish">
@@ -157,13 +158,13 @@ function editPlanNote(n){let P=pf==='today'?S.today:S.plan;if(!P[n]||!P[n].t)ret
 function savePlanNote(n){let P=pf==='today'?S.today:S.plan;if(P[n])P[n].note=$('a1').value.trim();if(pf==='tomorrow')S.planReady=false;save();closeSheet();render();toast('Room note saved')}
 function clearPlanNote(n){let P=pf==='today'?S.today:S.plan;if(P[n])P[n].note='';if(pf==='tomorrow')S.planReady=false;save();closeSheet();render();toast('Note removed')}
 function togglePlanReady(){if(!Object.values(S.plan).some(r=>r.t)){toast('Plan at least one room first');return}S.planReady=!S.planReady;save();render();toast(S.planReady?'Tomorrow is ready ✓':'Tomorrow marked as editable')}
-function openRoom(n){let r=S.today[n],a='';
+function openRoom(n){let r=S.today[n],a='',note=r.note?`<div class="panel" style="margin-top:12px"><strong>Room note</strong><div class="meta">${esc(r.note)}</div></div>`:'';
 if(r.st==='todo')a=`<button class="btn f" onclick="act(${jsArg(n)},'start')">Start cleaning</button>`;
 else if(r.st==='clean')a=`<button class="btn f" onclick="act(${jsArg(n)},'finish')">Finish cleaning</button>`;
 else if(r.st==='insp')a=`<div class="panel" style="margin-top:12px"><h3 style="margin:0 0 4px;font-size:15px">Inspection</h3>${CHK.map((c,i)=>`<label class="chk"><input type="checkbox" class="ck" data-i="${i}"> ${c}</label>`).join('')}</div><button class="btn g f" onclick="inspect(${jsArg(n)},true)">Pass → Ready</button><button class="btn r f" onclick="inspect(${jsArg(n)},false)">Fail → send back</button>`;
 else if(r.st==='fix')a=`<div class="panel" style="margin-top:12px"><strong>To fix</strong><div class="meta">${esc(r.fx)}</div></div><button class="btn f" onclick="act(${jsArg(n)},'reinsp')">Fixed → inspect again</button>`;
 else a=`<button class="btn s f" onclick="act(${jsArg(n)},'redo')">Re-clean room</button>`;
-sheet(`${head('Room '+esc(n))}<div class="meta">${tl(r.t)} · ${owner(floorOf(n))}${r.f?' · failed '+r.f+'×':''} ${pill(r)}</div>${a}<button class="btn s f" onclick="closeSheet();addIssue(${jsArg(n)})">Report issue for this room</button>`)}
+sheet(`${head('Room '+esc(n))}<div class="meta">${tl(r.t)} · ${owner(floorOf(n))}${r.f?' · failed '+r.f+'×':''} ${pill(r)}</div>${note}${a}<button class="btn s f" onclick="closeSheet();addIssue(${jsArg(n)})">Report issue for this room</button>`)}
 function act(n,w){let r=S.today[n];if(w==='start'||w==='redo'){r.st='clean';r.s=Date.now();r.started=r.started||r.s}
 else if(w==='finish'){r.finished=Date.now();r.m=Math.max(1,Math.floor((r.finished-r.s)/60000));r.st='insp'}
 else if(w==='reinsp'){r.st='insp';r.reinspect=Date.now()}save();closeSheet();render();toast(w==='start'?'Cleaning started':'Saved')}
@@ -184,7 +185,65 @@ function deleteTask(i){const t=S.tasks[i];if(!t)return;sheet(`${head('Delete tas
 function removeTask(i){if(!S.tasks[i])return closeSheet();S.tasks.splice(i,1);save();closeSheet();render();toast('Task deleted')}
 function addReminder(){sheet(`${head('Add reminder')}<div class="fld"><label>Reminder</label><input id="a1"></div><div class="fld"><label>Time</label><input id="a2" type="time"></div><button class="btn f" onclick="saveReminder()">Add reminder</button>`)}
 function saveReminder(){let t=$('a1').value.trim();if(!t)return toast('Write the reminder');S.reminders.push({text:t,time:$('a2').value||'No time',done:false});save();closeSheet();render();toast('Reminder added')}
-function quick(){sheet(`${head('Quick add')}<button class="btn s f" onclick="addTask()">✓ Task</button><button class="btn s f" onclick="addIssue()">⚠️ Issue</button><button class="btn s f" onclick="addReminder()">🔔 Reminder</button><button class="btn s f" onclick="closeSheet();go('plan')">🧹 Plan rooms</button>`)}
+function quick(){sheet(`${head('Quick add')}<button class="btn s f" onclick="showDumpPrompt()">⚡ Dump info</button><button class="btn s f" onclick="addTask()">✓ Task</button><button class="btn s f" onclick="addIssue()">⚠️ Issue</button><button class="btn s f" onclick="addReminder()">🔔 Reminder</button><button class="btn s f" onclick="closeSheet();go('plan')">🧹 Plan rooms</button>`)}
+
+function escapeRegex(v){return String(v).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+function dumpRoomRefs(text,roomContext){
+  const found=new Set(),configured=rooms().map(r=>r.n).sort((a,b)=>b.length-a.length);
+  configured.forEach(n=>{if(new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegex(n)}(?=$|[^\\p{L}\\p{N}])`,'iu').test(text))found.add(n)});
+  if(!found.size)for(const m of text.matchAll(/(?:room|suite|δωμάτιο|δωμ\.?)\s*([a-z]?\d{1,4}[a-z]?)/giu))found.add(m[1]);
+  if(!found.size&&roomContext){const clean=text.replace(/\b\d{1,2}:\d{2}\b/g,' ');for(const m of clean.matchAll(/\b(?:[a-z]?\d{2,4}[a-z]?)\b/giu))found.add(m[0])}
+  return [...found];
+}
+function dumpSegments(text){
+  const known=rooms().map(r=>r.n.toLowerCase()),taskStart=/^(?:bring|take|deliver|replace|restock|buy|pick up|order|prepare|call|tell|ask|send|check|remind|leave|put|add|φέρε|φέρτε|βάλε|βάλτε|ανέβασε|αγόρασε|πάρε|παραγγείλε|έλεγξε|τσεκάρισε|ενημέρωσε|άφησε|δώσε|τηλεφώνησε|στείλε|ετοίμασε)/iu,out=[];
+  const lines=String(text||'').split(/[\r\n.!?;]+/u);
+  for(const line of lines){let current='';for(const part of line.split(',')){const value=part.trim(),lower=value.toLowerCase(),startsRoom=known.some(n=>lower===n||lower.startsWith(n+' '))||/^(?:room|suite|δωμάτιο|δωμ\.?)\s/i.test(value)||/^\d{3,4}\b/u.test(value);if(current&&(startsRoom||taskStart.test(value))){out.push(current.trim());current=value}else current=current?current+', '+value:value}if(current.trim())out.push(current.trim())}
+  return out.filter(Boolean);
+}
+function dumpDetails(text,refs){
+  let details=text;
+  refs.forEach(room=>{const token=new RegExp('(^|[^\\p{L}\\p{N}])'+escapeRegex(room)+'(?=$|[^\\p{L}\\p{N}])','giu');details=details.replace(token,' ')});
+  return details.replace(/\b(?:room|suite|δωμάτιο|δωμ\.?)\b/giu,' ').replace(/^(?:στο|στη|στον|το)\s+/iu,'').replace(/^[\s,:;–—-]+|[\s,:;–—-]+$/gu,'').trim();
+}
+function organizeDumpInfo(text){
+  const actions=[],segments=dumpSegments(text);
+  const issueWords=/(?:\bbroken\b|\bdoes(?:n't| not) work\b|\bnot working\b|\bmalfunction\w*\b|\bleak\w*\b|\bdamag\w*\b|\bblock\w*\b|\bclogg\w*\b|\brepair\w*\b|\bissue\b|\bproblem\b|\bac\b|\bair[ -]?condition\w*\b|\bhot water\b|\btoilet\b|\bshower\b|\bwifi\b|\binternet\b|χαλασ|δεν δουλεύ|δε δουλεύ|δεν λειτουργ|διαρρο|σπασ|βλάβ|πρόβλη|προβλη|κλιματισ|επισκευ|δεν ανοίγ|δεν κλείν)/iu;
+  const holdWords=/(?:\bdo not enter\b|\bdon['’]?t enter\b|\bno entry\b|\bdnd\b|\bdo not disturb\b|μην\s+(?:το\s+)?(?:δώσετε|δώσεις|δώσουμε|μπει|μπείτε|καθαρίσει|καθαρίσετε)|μην\s+μπειτε)/iu;
+  const taskWords=/(?:\b(?:bring|take|deliver|replace|restock|buy|pick up|order|prepare|call|tell|ask|send|check|remind|leave|put|add)\b|φέρε|φέρτε|βάλε|βάλτε|ανέβασε|αγόρασε|πάρε|παραγγείλε|έλεγξε|τσεκάρισε|ενημέρωσε|άφησε|δώσε|τηλεφώνησε|στείλε|ετοίμασε)/iu;
+  for(const segment of segments){
+    const ready=/\b(?:passed inspection|inspection passed|inspected and ready|ready for guests)\b|(?:πέρασε τον έλεγχο|ελέγχθηκε και είναι έτοιμ)/iu.test(segment);
+    const cleaned=/\b(?:cleaned|is clean|now clean|finished cleaning|cleaning is done|cleaning started|ready for inspection|needs inspection|to inspect)\b|(?:καθαρίστ|έτοιμο για έλεγχο|για επιθεώρηση)/iu.test(segment);
+    const cleaning=/\b(?:cleaning now|started cleaning|start cleaning|cleaning in progress|is cleaning)\b|(?:ξεκίνησε καθαρισ|καθαρίζεται τώρα|καθαρίζουν τώρα)/iu.test(segment);
+    const needsClean=/\b(?:needs? (?:to be )?clean(?:ed|ing)?|dirty|checkout|check out|check-out|departure|departing|checked out|vacated)\b|(?:θέλει καθαρισ|χρειάζεται καθαρισ|για καθάρισμα|αναχώρηση|έφυγε|βρώμικ)/iu.test(segment);
+    const issue=issueWords.test(segment)||holdWords.test(segment),status=ready?'ready':needsClean?'todo':cleaned?'insp':cleaning?'clean':'';
+    const refs=dumpRoomRefs(segment,!!(status||issue||taskWords.test(segment)));
+    const configured=new Set(rooms().map(r=>r.n)),departure=/\b(?:checkout|check out|check-out|departure|departing|checked out|vacated)\b|(?:αναχώρηση|έφυγε)/iu.test(segment),stayover=/\b(?:stayover|stay over|occupied|in-house)\b|(?:παραμονή|διαμένει)/iu.test(segment);
+    if(status&&refs.length)refs.forEach(room=>{if(configured.has(room)){const roomType=departure?'D':stayover?'S':S.today[room]?.t||'S';actions.push({kind:'room',room,status,roomType})}else if(!issue)actions.push({kind:'issue',room,text:segment,pr:'Normal'})});
+    if(issue){
+      const details=dumpDetails(segment,refs);
+      const hold=holdWords.test(segment),problem=details||segment;
+      (refs.length?refs:['']).forEach(room=>actions.push({kind:'issue',room,text:hold?`Hold: ${problem}`:problem,pr:/\b(?:urgent|asap|immediately|emergency)\b|(?:επείγον|άμεσα|αμέσως)/iu.test(segment)||hold?'Urgent':'Normal'}));
+    }
+    if(status&&!refs.length&&!issue)actions.push({kind:'task',text:segment,time:dumpTime(segment)});
+    if(!status&&!issue){
+      if(refs.length&&!taskWords.test(segment))refs.forEach(room=>{if(configured.has(room))actions.push({kind:'note',room,text:dumpDetails(segment,refs)||segment,roomType:departure?'D':stayover?'S':S.today[room]?.t||'S'});else actions.push({kind:'issue',room,text:dumpDetails(segment,refs)||segment,pr:'Normal'})});
+      else {const time=dumpTime(segment);actions.push({kind:'task',text:segment,time})}
+    }
+  }
+  return actions;
+}
+function dumpTime(text){let m=text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);if(m)return `${m[1].padStart(2,'0')}:${m[2]}`;m=text.match(/\b(1[0-2]|0?[1-9])\s*(am|pm)\b/i);if(!m)return 'No time';let h=Number(m[1])%12+(m[2].toLowerCase()==='pm'?12:0);return `${String(h).padStart(2,'0')}:00`}
+function dumpActionLabel(a){if(a.kind==='room')return `Room ${a.room} · ${a.roomType==='D'?'Departure':'Stayover'} · ${a.status==='todo'?'Needs cleaning':a.status==='clean'?'Cleaning started':a.status==='insp'?'Needs inspection':'Marked ready'}`;if(a.kind==='note')return `Room ${a.room} · Note · ${a.text}`;if(a.kind==='issue')return `${a.room?`Room ${a.room}`:'Area'} · ${a.text} · ${a.pr}`;return `Task · ${a.text}${a.time!=='No time'?` · ${a.time}`:''}`}
+function renderDumpPreview(){const target=$('dumpPreview'),button=$('dumpApply');if(!target||!button)return;const actions=organizeDumpInfo($('dumpInput')?.value||''),groups=[['Room updates',actions.filter(a=>a.kind==='room')],['Room notes',actions.filter(a=>a.kind==='note')],['Issues',actions.filter(a=>a.kind==='issue')],['Tasks',actions.filter(a=>a.kind==='task')]].filter(([,items])=>items.length);target.innerHTML=groups.length?groups.map(([title,items])=>`<div class="dump-group"><h3>${title} · ${items.length}</h3>${items.map(a=>`<div class="dump-item">${esc(dumpActionLabel(a))}</div>`).join('')}</div>`).join(''):'<div class="meta">Your organized updates will appear here.</div>';button.disabled=!actions.length}
+function showDumpPrompt(){sheet(`${head('Dump info')}<p class="meta" style="margin-top:8px">Write a quick update in English or Greek. I’ll sort it into room changes, room notes, issues, and tasks.</p><div class="fld"><label for="dumpInput">What happened or needs doing?</label><textarea id="dumpInput" class="dump-entry" maxlength="1200" oninput="renderDumpPreview()" placeholder="204 checkout needs cleaning.&#10;301 AC isn’t working.&#10;Bring extra towels to 207."></textarea></div><div class="meta">Put separate updates on new lines or end them with a period. Rooms not already planned will default to Stayover unless you mention checkout or departure.</div><div id="dumpPreview" class="dump-preview"></div><button id="dumpApply" class="btn f dump-apply" onclick="applyDumpInfo()" disabled>Organize &amp; save</button><button class="btn s f" onclick="closeSheet()">Skip for now</button>`);renderDumpPreview();setTimeout(()=>$('dumpInput')?.focus(),50)}
+function applyDumpRoomUpdate(a){const now=Date.now(),existing=S.today[a.room]||{},roomType=a.roomType||existing.t||'S',r=Object.assign({p:false,note:''},existing,{t:roomType,st:a.status,f:0});for(const key of ['fx','h'])delete r[key];if(a.status==='todo'){for(const key of ['s','started','finished','inspected','ready','reinspect','m'])delete r[key]}
+else if(a.status==='clean'){for(const key of ['finished','inspected','ready','reinspect','m'])delete r[key];r.s=now;r.started=now}
+else if(a.status==='insp'){if(existing.st!=='clean'){r.s=now;r.started=now}r.finished=now;r.m=Math.max(1,Math.floor((now-r.s)/60000));for(const key of ['inspected','ready','reinspect'])delete r[key]}
+else if(a.status==='ready'){if(existing.st!=='clean'&&existing.st!=='insp'){r.s=now;r.started=now}r.finished=now;r.inspected=now;r.ready=now;r.m=Math.max(1,Math.floor((now-r.s)/60000))}
+S.today[a.room]=r;if(a.status==='ready')done(a.room)}
+function applyDumpRoomNote(a){const existing=S.today[a.room]||{},roomType=a.roomType||existing.t||'S',r=Object.assign({p:false,note:'',t:roomType,st:'todo',f:0},existing);r.note=[r.note,a.text].filter(Boolean).join(' · ');S.today[a.room]=r}
+function applyDumpInfo(){const text=$('dumpInput')?.value.trim();if(!text)return toast('Write a quick update first');const actions=organizeDumpInfo(text);if(!actions.length)return toast('Nothing to organize yet');for(const a of actions){if(a.kind==='room')applyDumpRoomUpdate(a);else if(a.kind==='note')applyDumpRoomNote(a);else if(a.kind==='issue')S.issues.unshift({room:a.room,text:a.text,pr:a.pr,open:true,when:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});else S.tasks.push({text:a.text,time:a.time,done:false})}save();closeSheet();render();toast(`Organized ${actions.length} update${actions.length===1?'':'s'}`)}
 
 
 function buildDailySummary(recipient){
@@ -375,7 +434,7 @@ const hasLocalData=hasStoredState();
 S=load();S.reminders=S.reminders||[];S.tasks=S.tasks||[];S.issues=S.issues||[];roll();render();
 if(!hasLocalData || !S.userName || !S.propertyName){onboarding(!S.userName?1:2)}
 else if(!rooms().length)setup();
-else if(S.brief!==S.day)showBrief();
+else showDumpPrompt();
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 
