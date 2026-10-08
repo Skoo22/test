@@ -592,6 +592,7 @@ rows=or.map(r=>`<div class="row"><div>🔔</div><div><strong>${esc(r.text)}</str
 sec=[...h.querySelectorAll('.sec')].find(s=>s.querySelector('h3')&&s.querySelector('h3').textContent==='Needs attention');
 if(sec){const l=sec.querySelector('.list');if(rows)l.insertAdjacentHTML('beforeend',rows);else if(!l.children.length)sec.remove()}
 else if(rows)h.insertAdjacentHTML('beforeend',`<div class="sec"><h3>Needs attention</h3><div class="list">${rows}</div></div>`)}catch(e){}};
+render();
 const _sb=showBrief;showBrief=function(){_sb();try{const or=S.reminders.filter(r=>!r.done).slice(0,4),b=$('brief').querySelector('.btn.f');
 if(or.length&&b)b.insertAdjacentHTML('beforebegin',`<div class="sec"><h3>Reminders</h3><div class="list">${or.map(r=>`<div class="row" style="grid-template-columns:1fr auto"><strong>${esc(r.text)}</strong><span class="meta">${esc(r.time||'No time')}</span></div>`).join('')}</div></div>`)}catch(e){}};
 const _sp=setPlan;setPlan=function(n,t){const r=S.today[n];if(pf==='today'&&r&&r.t===t&&r.st&&r.st!=='todo'&&!confirm('Remove room '+n+' from today? Its progress will be lost.'))return;_sp(n,t)};
