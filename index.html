@@ -52,6 +52,42 @@
   .v6-save-ok { animation:v6save .35s ease; }
   @keyframes v6save { 0%{opacity:.55; transform:scale(.98)} 100%{opacity:1; transform:scale(1)} }
 </style>
+<style id="setup-flow-style">
+:root{--setup-blue:#edf3ff;--setup-green:#eaf5ef;--setup-peach:#fff2e8;--setup-lav:#f2efff;--setup-accent:#5577eb}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--setup-blue:#1f2d52;--setup-green:#17332a;--setup-peach:#3a2b20;--setup-lav:#2c2650;--setup-accent:#9bb2ff}}
+:root[data-theme=dark]{--setup-blue:#1f2d52;--setup-green:#17332a;--setup-peach:#3a2b20;--setup-lav:#2c2650;--setup-accent:#9bb2ff}
+body.setup-open{overflow:hidden}
+.setup-flow{display:none;position:fixed;inset:0;z-index:90;overflow:auto;background:linear-gradient(135deg,var(--bg),var(--soft));padding:calc(24px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));color:var(--ink)}
+.setup-flow.on{display:block}
+.setup-wrap{max-width:1120px;margin:0 auto}
+.setup-top{display:flex;align-items:center;justify-content:space-between;margin:0 4px 24px}
+.setup-brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:16px}
+.setup-brand-mark{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--setup-accent);color:#fff;font-size:20px;box-shadow:0 5px 13px rgba(85,119,235,.22)}
+.setup-date{font-size:13px;color:var(--mu)}
+.setup-card{display:grid;grid-template-columns:220px minmax(0,1fr) 260px;gap:0;min-height:680px;background:var(--card);border:1px solid var(--ln);border-radius:24px;box-shadow:var(--sh);overflow:hidden}
+.setup-rail{background:color-mix(in srgb,var(--soft) 48%,var(--card));padding:26px 20px;border-right:1px solid var(--ln)}
+.setup-rail-title{font-size:14px;font-weight:800;margin:0 0 4px}.setup-rail-copy{font-size:11px;color:var(--mu);line-height:1.5;margin:0 0 28px}
+.setup-steps{position:relative;display:grid;gap:24px}.setup-steps:before{content:"";position:absolute;left:13px;top:14px;bottom:14px;width:2px;background:var(--ln)}
+.setup-step{position:relative;display:flex;align-items:flex-start;gap:11px;border:0;background:none;text-align:left;padding:0;color:var(--ink);min-height:0}
+.setup-step-mark{z-index:1;display:grid;place-items:center;flex:0 0 28px;height:28px;border:2px solid var(--ln);border-radius:50%;background:var(--card);color:var(--mu);font-size:11px;font-weight:800}
+.setup-step.active .setup-step-mark{background:var(--setup-accent);border-color:var(--setup-accent);color:#fff}
+.setup-step-copy{padding-top:1px}.setup-step-copy b{display:block;font-size:11px}.setup-step-copy span{display:block;color:var(--mu);font-size:10px;margin-top:3px}
+.setup-rail-note{margin-top:190px;padding:14px;border-radius:12px;background:var(--setup-green);color:var(--ink);font-size:11px;line-height:1.5}.setup-rail-note b{display:block;color:#47745c;margin-bottom:4px}
+.setup-main{padding:30px 30px 26px;min-width:0}.setup-kicker{font-size:10px;font-weight:800;letter-spacing:1.2px;color:var(--setup-accent)}
+.setup-main h1{font-size:26px;line-height:1.2;margin:10px 0 7px;letter-spacing:-.3px}.setup-intro{font-size:12px;color:var(--mu);margin:0 0 24px;line-height:1.5}
+.setup-section{scroll-margin-top:24px;margin-top:23px}.setup-section:first-of-type{margin-top:0}.setup-section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}.setup-section-head h2{font-size:14px;margin:0}.setup-section-head p{font-size:10px;color:var(--mu);margin:3px 0 0}
+.setup-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.setup-field label{display:block;font-size:10px;color:var(--mu);font-weight:800;margin:0 0 5px}.setup-field input{width:100%;min-width:0;border:1px solid var(--ln);background:var(--card);color:var(--ink);border-radius:10px;padding:11px 12px;outline-color:var(--setup-accent)}
+.setup-floors{display:grid;gap:9px}.setup-floor{border:1px solid var(--ln);border-radius:12px;padding:11px 12px;background:var(--card)}.setup-floor-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}.setup-floor-head b{font-size:11px}.setup-floor-count{margin-left:auto;font-size:10px;color:var(--mu)}.setup-floor-input{width:100%;border:0;background:transparent;color:var(--ink);padding:5px 0;font-size:13px;outline:0}.setup-floor-input::placeholder{color:var(--mu);opacity:.8}
+.setup-floor-dot{width:9px;height:9px;border-radius:50%}.setup-floor-dot.g{background:#6686e8}.setup-floor-dot.one{background:#69a883}.setup-floor-dot.two{background:#d79263}
+.setup-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.setup-chip{border-radius:7px;padding:4px 8px;font-size:10px;font-weight:800}.setup-chip.t0{background:var(--setup-blue);color:#4969c5}.setup-chip.t1{background:var(--setup-green);color:#47745c}.setup-chip.t2{background:var(--setup-peach);color:#9a633e}.setup-chip.t3{background:var(--setup-lav);color:#6558a6}
+.setup-team-note{font-size:10px;color:var(--mu);margin:8px 0 0}.setup-actions{border-top:1px solid var(--ln);margin-top:23px;padding-top:17px}.setup-submit{width:100%;background:var(--setup-accent);color:#fff;border:0;border-radius:11px;padding:13px;font-weight:800}
+.setup-summary{margin:20px 18px 20px 0;padding:21px 18px;border:1px solid var(--ln);border-radius:17px;background:color-mix(in srgb,var(--soft) 27%,var(--card));align-self:stretch}.setup-summary h2{font-size:14px;margin:0 0 4px}.setup-summary-sub{font-size:10px;color:var(--mu);margin:0 0 15px}
+.setup-property-card{padding:13px;border-radius:12px;background:var(--setup-blue);margin-bottom:19px}.setup-property-card span{display:block;font-size:9px;font-weight:800;letter-spacing:.7px;color:#5b73ba}.setup-property-card b{display:block;font-size:14px;margin-top:8px;overflow-wrap:anywhere}.setup-property-card small{display:block;font-size:10px;color:var(--mu);margin-top:4px}
+.setup-summary-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--ln);font-size:11px;color:var(--mu)}.setup-summary-row b{color:var(--ink);font-size:12px}.setup-summary-floors{display:grid;gap:8px;margin-top:13px}.setup-summary-floor{padding:9px 10px;border-radius:9px;font-size:10px}.setup-summary-floor b{display:flex;justify-content:space-between;margin-bottom:4px;font-size:10px}.setup-summary-floor span{color:var(--mu)}.setup-summary-floor.g{background:var(--setup-blue)}.setup-summary-floor.one{background:var(--setup-green)}.setup-summary-floor.two{background:var(--setup-peach)}
+.setup-next{margin-top:20px;padding:13px;border-radius:11px;background:var(--setup-lav);font-size:10px;line-height:1.45}.setup-next b{display:block;color:#6558a6;font-size:11px;margin-bottom:4px}
+@media(max-width:920px){.setup-card{grid-template-columns:190px minmax(0,1fr)}.setup-summary{grid-column:2;margin:0 22px 22px}.setup-rail-note{margin-top:100px}}
+@media(max-width:650px){.setup-flow{padding:calc(14px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom))}.setup-top{margin:0 3px 14px}.setup-brand{font-size:14px}.setup-brand-mark{width:34px;height:34px}.setup-date{font-size:11px}.setup-card{display:block;min-height:0;border-radius:18px}.setup-rail{padding:14px 16px;border-right:0;border-bottom:1px solid var(--ln)}.setup-rail-title,.setup-rail-copy,.setup-rail-note{display:none}.setup-steps{display:flex;justify-content:space-between;gap:7px}.setup-steps:before{left:13px;right:13px;top:13px;bottom:auto;width:auto;height:2px}.setup-step{align-items:center;gap:6px;flex:1}.setup-step-mark{flex-basis:26px;height:26px;font-size:10px}.setup-step-copy{padding:0}.setup-step-copy b{font-size:9px}.setup-step-copy span{display:none}.setup-main{padding:21px 17px}.setup-main h1{font-size:23px}.setup-fields{grid-template-columns:1fr}.setup-summary{margin:0 17px 17px;padding:15px}.setup-summary-floors{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.setup-summary-floor{padding:8px 7px}.setup-summary-floor span{overflow-wrap:anywhere}.setup-section{scroll-margin-top:12px}}
+</style>
 </head><body>
 <div class="app">
 <header class="top"><div><div class="title" id="title">Home</div><div class="date" id="date"></div></div><div><button class="icon" onclick="quick()">＋</button><button class="icon" onclick="setup()">⚙</button></div></header>
@@ -64,7 +100,7 @@
 <section id="stats" class="page"></section>
 </div>
 <nav class="nav"><button data-p="home" class="on" onclick="go('home')"><b>⌂</b>Home</button><button data-p="rooms" onclick="go('rooms')"><b>▦</b>Rooms</button><button data-p="plan" onclick="go('plan')"><b>◷</b>Plan</button><button data-p="tasks" onclick="go('tasks')"><b>✓</b>Tasks</button><button data-p="stats" onclick="go('stats')"><b>⌁</b>Stats</button></nav>
-<div class="ov" id="ov"><div class="sheet" id="sheet"></div></div><div class="toast" id="toast"></div><div class="brief" id="brief"></div>
+<div class="ov" id="ov"><div class="sheet" id="sheet"></div></div><div class="toast" id="toast"></div><div class="brief" id="brief"></div><div id="setupFlow" class="setup-flow" aria-hidden="true"></div>
 <script>
 const KEY='stay365_pwa_v5_2',ALT_KEY='housekeeping_planner_v6_3',FL=[['G','Ground'],['1','1st floor'],['2','2nd floor']],CHK=['Bed made, linen fresh','Bathroom clean, towels set','Floors vacuumed / washed','Surfaces dusted, no marks','Trash out, amenities restocked','Nothing broken or left behind'],ST={todo:'To do',clean:'Cleaning',insp:'To inspect',fix:'Fix needed',ready:'Ready'};
 const blank=()=>({userName:'',propertyName:'',hk:['Housekeeper 1','Housekeeper 2'],floors:{G:[],1:[],2:[]},day:'',brief:'',planReady:false,plan:{},today:{},hist:[],issues:[],tasks:[],reminders:[]});
@@ -396,25 +432,30 @@ function downloadSummary(text){
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
-function onboarding(step=1){
-  if(step===1){
-    sheet(`${head('Welcome')}<div class="onboard"><div class="big">Hello 👋</div><p class="meta">Before we set things up, what should I call you?</p><div class="fld"><label>Your name</label><input id="onName" autocomplete="given-name" placeholder="e.g. Alex" value="${esc(S.userName||'')}"></div><button class="btn f" onclick="saveOnboardingName()">Next →</button></div>`);
-    setTimeout(()=>{$('onName')?.focus()},50);
-  }else{
-    sheet(`${head('One more thing')}<div class="onboard"><div class="big">What is the name of your environment?</div><p class="meta">This can be your hotel, apartment building, property, or whatever you want to call this planner.</p><div class="fld"><label>Environment name</label><input id="onEnv" autocomplete="organization" placeholder="e.g. My Hotel" value="${esc(S.propertyName||'')}"></div><button class="btn f" onclick="saveOnboardingEnvironment()">Finish setup →</button></div>`);
-    setTimeout(()=>{$('onEnv')?.focus()},50);
-  }
+function onboarding(){
+  const floorBlocks=FL.map(([f,label],i)=>{const tone=['g','one','two'][i],key=f==='G'?'G':f;return `<div class="setup-floor"><div class="setup-floor-head"><span class="setup-floor-dot ${tone}"></span><b>${label==='Ground'?'Ground floor':label}</b><span class="setup-floor-count" id="setup-count-${key}">0 rooms</span></div><input class="setup-floor-input" id="setupRooms${key}" autocomplete="off" aria-label="${label} rooms" placeholder="e.g. ${f==='G'?'101, 102, 103':f==='1'?'201, 202':'301, 302'}" value="${esc(S.floors[f].join(', '))}" oninput="updateSetupSummary()"><div class="setup-chips" id="setup-chips-${key}"></div></div>`}).join('');
+  $('setupFlow').innerHTML=`<div class="setup-wrap"><header class="setup-top"><div class="setup-brand"><span class="setup-brand-mark">⌂</span><span>Housekeeping Planner</span></div><div class="setup-date">${new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'})}</div></header>
+  <div class="setup-card"><aside class="setup-rail"><h2 class="setup-rail-title">Set up your property</h2><p class="setup-rail-copy">A few quick details to get started. You can edit these later.</p><div class="setup-steps"><button type="button" data-target="setup-details" class="setup-step active" onclick="setupJump('setup-details')"><span class="setup-step-mark">1</span><span class="setup-step-copy"><b>Your details</b><span>Name and property</span></span></button><button type="button" data-target="setup-rooms" class="setup-step" onclick="setupJump('setup-rooms')"><span class="setup-step-mark">2</span><span class="setup-step-copy"><b>Rooms</b><span>Floors and room numbers</span></span></button><button type="button" data-target="setup-team" class="setup-step" onclick="setupJump('setup-team')"><span class="setup-step-mark">3</span><span class="setup-step-copy"><b>Team</b><span>Housekeeping staff</span></span></button></div><div class="setup-rail-note"><b>Easy to change later</b>Your room list and team details can be updated anytime.</div></aside>
+  <main class="setup-main"><div class="setup-kicker">GETTING STARTED</div><h1>Tell us about your place</h1><p class="setup-intro">Add the details you need to get started. There’s no need to get everything perfect now.</p>
+  <section class="setup-section" id="setup-details"><div class="setup-section-head"><div><h2>Your details</h2><p>So the planner feels like yours.</p></div></div><div class="setup-fields"><div class="setup-field"><label for="setupName">Your name</label><input id="setupName" autocomplete="given-name" placeholder="e.g. Alex" value="${esc(S.userName||'')}" oninput="updateSetupSummary()"></div><div class="setup-field"><label for="setupProperty">Property name</label><input id="setupProperty" autocomplete="organization" placeholder="e.g. Blue Harbor Lodge" value="${esc(S.propertyName||'')}" oninput="updateSetupSummary()"></div></div></section>
+  <section class="setup-section" id="setup-rooms"><div class="setup-section-head"><div><h2>Rooms</h2><p>Enter room numbers separated by commas.</p></div><span class="setup-floor-count" id="setup-total-inline">0 rooms</span></div><div class="setup-floors">${floorBlocks}</div></section>
+  <section class="setup-section" id="setup-team"><div class="setup-section-head"><div><h2>Team</h2><p>Add staff names now, or keep the defaults.</p></div></div><div class="setup-fields"><div class="setup-field"><label for="setupH0">Housekeeper · 1st floor</label><input id="setupH0" autocomplete="name" value="${esc(S.hk[0])}"></div><div class="setup-field"><label for="setupH1">Housekeeper · 2nd floor</label><input id="setupH1" autocomplete="name" value="${esc(S.hk[1])}"></div></div><p class="setup-team-note">Staff details can be changed later in setup.</p></section>
+  <div class="setup-actions"><button class="setup-submit" type="button" onclick="saveInitialSetup()">Start planning</button></div></main>
+  <aside class="setup-summary"><h2>Setup summary</h2><p class="setup-summary-sub">A quick overview of what you’ve added</p><div class="setup-property-card"><span>PROPERTY</span><b id="setup-summary-property">Your property</b><small id="setup-summary-manager">Managed by you</small></div><div class="setup-summary-row"><span>Rooms added</span><b id="setup-summary-total">0 rooms</b></div><div class="setup-summary-floors"><div class="setup-summary-floor g"><b><span>Ground floor</span><span id="setup-summary-G">0</span></b><span id="setup-summary-rooms-G">No rooms yet</span></div><div class="setup-summary-floor one"><b><span>1st floor</span><span id="setup-summary-1">0</span></b><span id="setup-summary-rooms-1">No rooms yet</span></div><div class="setup-summary-floor two"><b><span>2nd floor</span><span id="setup-summary-2">0</span></b><span id="setup-summary-rooms-2">No rooms yet</span></div></div><div class="setup-next"><b>Next up</b>Plan today’s rooms and start tracking progress.</div></aside></div></div>`;
+  $('setupFlow').classList.add('on');$('setupFlow').setAttribute('aria-hidden','false');document.body.classList.add('setup-open');updateSetupSummary();
 }
-function saveOnboardingName(){
-  const v=$('onName').value.trim();
-  if(!v){toast('Please enter your name');return}
-  S.userName=v;save();onboarding(2);
+function setupJump(id){document.querySelectorAll('.setup-step').forEach(step=>step.classList.toggle('active',step.dataset.target===id));$(id)?.scrollIntoView({behavior:'smooth',block:'center'})}
+function setupRoomValues(f){return [...new Set($('setupRooms'+f).value.split(/[\n,;]+/).map(v=>v.trim()).filter(Boolean))]}
+function updateSetupSummary(){
+  const property=$('setupProperty')?.value.trim()||'Your property',manager=$('setupName')?.value.trim()||'You';
+  const propertyEl=$('setup-summary-property'),managerEl=$('setup-summary-manager');if(propertyEl)propertyEl.textContent=property;if(managerEl)managerEl.textContent='Managed by '+manager;
+  let total=0;FL.forEach(([f],i)=>{const key=f==='G'?'G':f,values=$('setupRooms'+key)?setupRoomValues(key):[],count=values.length;total+=count;const counter=$('setup-count-'+key),summaryCount=$('setup-summary-'+key),summaryRooms=$('setup-summary-rooms-'+key),chips=$('setup-chips-'+key);if(counter)counter.textContent=count+' room'+(count===1?'':'s');if(summaryCount)summaryCount.textContent=String(count);if(summaryRooms)summaryRooms.textContent=values.length?values.join(' · '):'No rooms yet';if(chips)chips.innerHTML=values.map((v,n)=>`<span class="setup-chip t${n%4}">${esc(v)}</span>`).join('')});
+  const totalText=total+' room'+(total===1?'':'s');if($('setup-total-inline'))$('setup-total-inline').textContent=totalText;if($('setup-summary-total'))$('setup-summary-total').textContent=totalText;
 }
-function saveOnboardingEnvironment(){
-  const v=$('onEnv').value.trim();
-  if(!v){toast('Please enter an environment name');return}
-  S.propertyName=v;save();closeSheet();
-  if(!rooms().length) setup(); else {render();showBrief();}
+function saveInitialSetup(){
+  const name=$('setupName').value.trim(),property=$('setupProperty').value.trim();if(!name){$('setupName').focus();toast('Please enter your name');return}if(!property){$('setupProperty').focus();toast('Please enter your property name');return}
+  const nextFloors=Object.fromEntries(FL.map(([f])=>{const key=f==='G'?'G':f;return[f,setupRoomValues(key)]}));if(!Object.values(nextFloors).some(a=>a.length)){setupJump('setup-rooms');$('setupRoomsG').focus();toast('Add at least one room to get started');return}
+  S.userName=name;S.propertyName=property;S.hk=[$('setupH0').value.trim()||'Housekeeper 1',$('setupH1').value.trim()||'Housekeeper 2'];S.floors=nextFloors;const valid=new Set(rooms().map(r=>r.n)),keep=map=>Object.fromEntries(Object.entries(isRecord(map)?map:{}).filter(([n])=>valid.has(n)));S.today=keep(S.today);S.plan=keep(S.plan);save();$('setupFlow').classList.remove('on');$('setupFlow').setAttribute('aria-hidden','true');document.body.classList.remove('setup-open');render();toast('Setup saved');
 }
 function setup(){sheet(`${head('Setup')}<div class="fld"><label>Property / hotel name</label><input id="prop" placeholder="e.g. My Hotel" value="${esc(S.propertyName||'')}"></div><div class="fld"><label>Housekeeper on 1st floor</label><input id="h0" value="${esc(S.hk[0])}"></div><div class="fld"><label>Housekeeper on 2nd floor</label><input id="h1" value="${esc(S.hk[1])}"></div>${FL.map(([f,l])=>`<div class="fld"><label>${l} rooms (separate with commas)</label><input id="fl${f}" value="${esc(S.floors[f].join(', '))}"></div>`).join('')}<button class="btn f" onclick="saveSetup()">Save setup</button>
 <div class="fld" style="margin-top:22px"><label>Backup — copy this text somewhere safe, or paste a backup here and restore</label><textarea id="bk">${esc(JSON.stringify(S))}</textarea></div><button class="btn s f" onclick="copyBackup()">Copy backup</button><button class="btn s f" onclick="restore()">Restore from pasted backup</button><button class="btn s f" onclick="if(confirm('Clear today\\'s list and statuses?')){S.today={};save();closeSheet();render()}">Clear today</button>`)}
