@@ -435,6 +435,7 @@ const hasLocalData=hasStoredState();
 S=load();S.reminders=S.reminders||[];S.tasks=S.tasks||[];S.issues=S.issues||[];roll();render();
 if(!hasLocalData || !S.userName || !S.propertyName){onboarding(!S.userName?1:2)}
 else if(!rooms().length)setup();
+else if(S.brief!==S.day)showBrief();
 else showDumpPrompt();
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
@@ -452,6 +453,38 @@ if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWor
   window.addEventListener('pagehide',snapshot);
   window.addEventListener('beforeunload',snapshot);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')snapshot();});
+})();
+</script>
+<style id="v7-fixes-css">.x{min-height:34px}.mini{min-height:0}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:6px}</style>
+<script id="v7-fixes">
+(function(){
+act=function(n,w){let r=S.today[n];if(!r)return;
+if(w==='start'||w==='redo'){r.st='clean';r.s=Date.now();r.started=r.started||r.s;delete r.dump}
+else if(w==='finish'){r.finished=Date.now();r.m=Math.max(1,Math.floor((r.finished-r.s)/60000));if(r.t==='D')r.st='insp';else{r.st='ready';r.ready=Date.now();done(n)}}
+else if(w==='reinsp'){r.st='insp';r.reinspect=Date.now()}
+save();closeSheet();render();toast(w==='start'?'Cleaning started':'Saved')};
+done=function(n){let r=S.today[n];if(!r||r.h)return;r.h=1;r.ready=r.ready||Date.now();if(r.dump)return;
+let turn=r.t==='D'&&r.started?Math.max(0,Math.floor((r.ready-r.started)/60000)):0;
+S.hist.push({d:S.day,room:n,t:r.t,m:r.m||0,f:r.f||0,started:r.started||0,finished:r.finished||0,inspected:r.inspected||0,ready:r.ready||0,turn})};
+applyDumpRoomUpdate=function(a){const now=Date.now(),ex=S.today[a.room]||{},t=a.roomType||ex.t||'S';let st=a.status;if(st==='insp'&&t==='S')st='ready';
+const r=Object.assign({p:false,note:''},ex,{t,st,f:0});['fx','h','dump'].forEach(k=>delete r[k]);
+if(st==='todo'){['s','started','finished','inspected','ready','reinspect','m'].forEach(k=>delete r[k])}
+else if(st==='clean'){['finished','inspected','ready','reinspect','m'].forEach(k=>delete r[k]);r.s=now;r.started=now}
+else{if(ex.st==='clean'&&ex.s){r.finished=now;r.m=Math.max(1,Math.floor((now-ex.s)/60000))}else{r.dump=1;delete r.m}
+if(st==='insp'){['inspected','ready','reinspect'].forEach(k=>delete r[k])}else{r.inspected=now;r.finished=r.finished||now}}
+S.today[a.room]=r;if(st==='ready')done(a.room)};
+const _org=organizeDumpInfo,verb=/^(?:hold:\s*)?(?:bring|take|deliver|replace|restock|buy|pick up|order|prepare|call|tell|ask|send|check|remind|leave|put|add)\b/i,defect=/\b(?:broken|not working|doesn'?t work|does not work|leak\w*|clog\w*|block\w*|damag\w*|repair\w*|problem|issue)\b/i;
+organizeDumpInfo=function(t){return _org(String(t||'').replace(/(\d)\.(\d{2})\b/g,'$1:$2')).map(a=>{
+if(a.kind==='issue'&&verb.test(a.text.trim())&&!defect.test(a.text)){const x=(a.room?'Room '+a.room+': ':'')+a.text.replace(/^hold:\s*/i,'');return{kind:'task',text:x,time:dumpTime(x)}}return a})};
+const _render=render;render=function(){_render();try{const h=$('home'),or=S.reminders.filter(r=>!r.done).slice(0,3),
+rows=or.map(r=>`<div class="row"><div>🔔</div><div><strong>${esc(r.text)}</strong><div class="meta">${esc(r.time||'No time')}</div></div></div>`).join(''),
+sec=[...h.querySelectorAll('.sec')].find(s=>s.querySelector('h3')&&s.querySelector('h3').textContent==='Needs attention');
+if(sec){const l=sec.querySelector('.list');if(rows)l.insertAdjacentHTML('beforeend',rows);else if(!l.children.length)sec.remove()}
+else if(rows)h.insertAdjacentHTML('beforeend',`<div class="sec"><h3>Needs attention</h3><div class="list">${rows}</div></div>`)}catch(e){}};
+const _sb=showBrief;showBrief=function(){_sb();try{const or=S.reminders.filter(r=>!r.done).slice(0,4),b=$('brief').querySelector('.btn.f');
+if(or.length&&b)b.insertAdjacentHTML('beforebegin',`<div class="sec"><h3>Reminders</h3><div class="list">${or.map(r=>`<div class="row" style="grid-template-columns:1fr auto"><strong>${esc(r.text)}</strong><span class="meta">${esc(r.time||'No time')}</span></div>`).join('')}</div></div>`)}catch(e){}};
+const _sp=setPlan;setPlan=function(n,t){const r=S.today[n];if(pf==='today'&&r&&r.t===t&&r.st&&r.st!=='todo'&&!confirm('Remove room '+n+' from today? Its progress will be lost.'))return;_sp(n,t)};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;const d=S.day;roll();if(S.day!==d){render();if(S.userName&&S.propertyName&&rooms().length){closeSheet();showBrief()}}});
 })();
 </script>
 </body></html>
