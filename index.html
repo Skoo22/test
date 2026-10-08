@@ -282,7 +282,7 @@ ${priorityBlock}
 <div class="section"><h2>Completed tasks</h2>${doneRows}</div>
 <div class="section"><h2>Open tasks</h2>${openRows}</div>
 <div class="footer"><span>Prepared by ${from}</span><span>Housekeeping Planner</span></div>
-</div><script>setTimeout(()=>window.print(),350)</script></body></html>`;
+</div><script>setTimeout(()=>window.print(),350)<\/script></body></html>`;
   const w=window.open('','_blank');
   if(!w){toast('Allow pop-ups to create the PDF');return}
   w.document.open();w.document.write(html);w.document.close();
