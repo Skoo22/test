@@ -202,7 +202,7 @@ function load(){
   return loaded.find(hasContent)||loaded[0]||blank();
 }
 function hasStoredState(){try{return !!(localStorage.getItem(KEY)||localStorage.getItem(ALT_KEY))}catch(e){return false}}
-const save=()=>{try{const raw=JSON.stringify(S);localStorage.setItem(KEY,raw);localStorage.setItem(ALT_KEY,raw)}catch(e){}};
+const save=()=>{try{const raw=JSON.stringify(S);localStorage.setItem(KEY,raw);localStorage.setItem(ALT_KEY,raw)}catch(e){toast('Could not save changes. Browser storage may be full or blocked. Copy a backup before continuing.')}};
 function toast(m){let t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600)}
 function roll(){let d=new Date().toDateString();if(S.day!==d){S.today={};for(const r in S.plan)S.today[r]=Object.assign({},S.plan[r],{st:'todo',f:0});S.plan={};S.planReady=false;S.tasks=S.tasks.filter(t=>!t.done);S.reminders=S.reminders.filter(r=>!r.done);S.day=d;save()}}
 const rooms=()=>FL.flatMap(([f])=>S.floors[f].map(n=>({n,f})));
